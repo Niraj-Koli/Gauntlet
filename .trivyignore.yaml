@@ -33,6 +33,12 @@ vulnerabilities:
   - id: CVE-2026-59822
     statement: Proxy only (MCP streamable HTTP endpoint auth). The proxy is not run.
     expired_at: 2027-01-31
+  - id: GHSA-g5ff-637f-6q2m
+    statement: Proxy only (/utils/transform_request local file read). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: GHSA-hhww-mrg2-969h
+    statement: Proxy only (/sso/debug/callback reflected XSS). The proxy is not run.
+    expired_at: 2027-01-31
 
 misconfigurations:
   - id: KSV-0125

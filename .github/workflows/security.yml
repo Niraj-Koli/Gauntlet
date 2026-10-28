@@ -36,7 +36,8 @@ jobs:
           uv export --locked --no-dev --no-emit-workspace --format requirements-txt > requirements.txt
           ignored=(PYSEC-2026-388 PYSEC-2026-391 PYSEC-2026-2598 PYSEC-2026-2599 PYSEC-2026-2600
                    PYSEC-2026-2601 PYSEC-2026-2602 PYSEC-2026-3476 PYSEC-2026-3477 PYSEC-2026-3479
-                   PYSEC-2026-3861 PYSEC-2026-4066 PYSEC-2026-4067 PYSEC-2026-4070)
+                   PYSEC-2026-3861 PYSEC-2026-4066 PYSEC-2026-4067 PYSEC-2026-4070
+                   GHSA-hhww-mrg2-969h GHSA-g5ff-637f-6q2m)
           uvx pip-audit -r requirements.txt --disable-pip --no-deps --progress-spinner off \
             "${ignored[@]/#/--ignore-vuln=}"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

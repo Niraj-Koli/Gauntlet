@@ -4,7 +4,7 @@
 
 ## Context
 
-The security scans (pip-audit and Trivy) report advisories against litellm 1.83.0, three of them critical. The fixes are in litellm 1.83.7 through 1.84.0. But every stable litellm release from 1.84 on requires `openai<3`, and the OpenAI Agents SDK that Gauntlet uses (0.24) requires `openai>=3`. The only release that satisfies both is a pre-release, 1.107.0rc2.
+The security scans (pip-audit and Trivy) report advisories against litellm 1.83.0, three of them critical. The fixes are in litellm 1.83.7 through 1.95.0. But every stable litellm release from 1.84 on, up to 1.106.6, requires `openai<3`, and the OpenAI Agents SDK that Gauntlet uses (0.24) requires `openai>=3`. The only release that satisfies both is a pre-release, 1.107.0rc2.
 
 Every advisory is in LiteLLM's **proxy server**, the AI gateway LiteLLM can run as a service:
 - `/prompts/test` (template injection);
@@ -13,7 +13,9 @@ Every advisory is in LiteLLM's **proxy server**, the AI gateway LiteLLM can run 
 - `/user/update`;
 - proxy API key checks (SQL injection);
 - Host-header authentication;
-- the proxy's MCP endpoint.
+- the proxy's MCP endpoint;
+- `/sso/debug/callback` (reflected XSS);
+- `/utils/transform_request` (local file read).
 
 Gauntlet imports litellm only as a client library, through the Agents SDK's `LitellmModel` and `litellm.cost_per_token`. It never imports `litellm.proxy` or starts the proxy, so none of those endpoints exist in it.
 
