@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gauntlet-apps
+description: App of apps. The Argo CD project and Applications that deploy Gauntlet and its platform pieces.
+type: application
+version: 0.1.0

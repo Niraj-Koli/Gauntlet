@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gauntlet.fullname" . }}
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+data:
+  {{- $api := include "gauntlet.apiHost" . }}
+  {{- $hosts := list (printf "%s:*" $api) (printf "%s.%s.svc:*" $api .Release.Namespace) (printf "%s.%s.svc.cluster.local:*" $api .Release.Namespace) "127.0.0.1:*" "localhost:*" }}
+  API_BASE_URL: {{ printf "http://%s:8000" $api | quote }}
+  MCP_ALLOWED_HOSTS: {{ toJson $hosts | quote }}
+  AUTO_MIGRATE: {{ (not .Values.migrations.enabled) | toString | quote }}
+  ADMIN_EMAILS: {{ toJson .Values.admin.emails | quote }}
+  {{- if .Values.ingress.enabled }}
+  CORS_ORIGINS: {{ toJson (list (printf "%s://%s" (ternary "https" "http" .Values.ingress.tls.enabled) .Values.ingress.host)) | quote }}
+  {{- end }}
+  {{- with (.Values.supabase.internalUrl | default .Values.supabase.url) }}
+  SUPABASE_URL: {{ . | quote }}
+  {{- end }}
+  # The API is only reachable from the dashboard (see networkpolicy.yaml), which passes on
+  # the client address that rate limits key on.
+  FORWARDED_ALLOW_IPS: "*"
+  HOME: /tmp
+  {{- range $key, $value := .Values.config }}
+  {{- if ne (toString $value) "" }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+  {{- end }}

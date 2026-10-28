@@ -1,0 +1,116 @@
+# Defaults for every environment; values-local.yaml (k3d) and values-prod.yaml override them.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  api:
+    repository: ghcr.io/YOUR_GITHUB_USER/gauntlet-api
+    tag: "" # defaults to the chart's appVersion; CI sets the commit SHA
+    pullPolicy: IfNotPresent
+  web:
+    repository: ghcr.io/YOUR_GITHUB_USER/gauntlet-web
+    tag: ""
+    pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# Secrets come from a Secret this chart doesn't create (or from sealedSecret below). The API,
+# the trading floor and the migration job load every key in it as an environment variable:
+#   DATABASE_URL          required: postgresql+asyncpg://... (a Supabase project)
+#   GAUNTLET_SECRET_KEY  required: signs the traders' MCP tokens
+#   OPENAI_API_KEY, ANTHROPIC_API_KEY, TAVILY_API_KEY, ADMIN_API_TOKEN, ...  as needed
+existingSecret: gauntlet
+
+# Encrypted with kubeseal (deploy/scripts/seal-secrets.sh) and safe to commit. When set, the
+# chart renders a SealedSecret named after existingSecret, applied before anything uses it.
+sealedSecret:
+  encryptedData: {}
+
+# Non-secret settings for the API and the trading floor (see apps/api/src/gauntlet/settings.py).
+# Empty values are left out.
+config:
+  DEMO_MODE: "false"
+  RUN_EVERY_N_MINUTES: ""
+  RUN_EVEN_WHEN_MARKET_IS_CLOSED: "false"
+  USE_MANY_MODELS: "false"
+  NOTIFY_CHANNEL: auto
+
+supabase:
+  # As browsers reach it: the dashboard subscribes to Realtime and signs admins in here.
+  url: ""
+  # The public anon key. Every browser receives it, so it isn't a secret.
+  anonKey: ""
+  # Where the API fetches Supabase's signing keys, if not the public URL.
+  internalUrl: ""
+
+admin:
+  # Supabase users allowed to use admin endpoints.
+  emails: []
+
+api:
+  replicas: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+    limits: { memory: 768Mi }
+  podDisruptionBudget:
+    minAvailable: 1
+
+worker:
+  # The scheduler holds a leader lease, but one replica is the design: it owns the
+  # researchers' memory volume and is replaced with the Recreate strategy.
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { memory: 1536Mi }
+  # Time for in-flight runs to be recorded as interrupted and the lease released.
+  terminationGracePeriodSeconds: 45
+  persistence:
+    # The researchers' memory databases (one libsql file per trader).
+    enabled: true
+    size: 1Gi
+    storageClassName: ""
+    accessMode: ReadWriteOnce
+
+web:
+  replicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 384Mi }
+  podDisruptionBudget:
+    minAvailable: 1
+
+migrations:
+  # Run `gauntlet migrate` as a hook before each rollout; the pods then skip it.
+  enabled: true
+  backoffLimit: 2
+
+ingress:
+  enabled: true
+  className: ""
+  host: gauntlet.example.com
+  annotations: {}
+  tls:
+    enabled: false
+    secretName: gauntlet-tls
+
+networkPolicy:
+  # The API only accepts the dashboard and the trading floor; nothing connects to the
+  # trading floor. Outbound traffic (model providers, Supabase) is left open.
+  enabled: true
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile: { type: RuntimeDefault }
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: { drop: [ALL] }
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

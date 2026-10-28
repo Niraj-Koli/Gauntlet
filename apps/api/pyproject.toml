@@ -1,0 +1,34 @@
+[project]
+name = "gauntlet"
+version = "0.1.0"
+description = "Autonomous AI traders on a simulated trading floor: engine, MCP servers and API"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "alembic>=1.20.0",
+    "anyio>=4.15.1",
+    "asyncpg>=0.32.0",
+    "exchange-calendars>=4.13.2",
+    "fastapi>=0.136.1",
+    "httpx>=0.28.1",
+    "limits>=5.8.0",
+    "massive>=2.8.0",
+    "mcp>=1.27.0,<2",
+    "openai>=3.36.0,<4",
+    "openai-agents[litellm]>=0.24.0,<0.25",
+    "pandas>=3.0.6",
+    "pydantic>=2.13.3",
+    "pydantic-settings>=2.16.1",
+    "pyjwt[crypto]>=2.15.1",
+    "slowapi>=0.1.10",
+    "sqlalchemy[asyncio]>=2.1.6",
+    "uvicorn[standard]>=0.46.0",
+]
+
+[project.scripts]
+gauntlet = "gauntlet.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13"]
+build-backend = "uv_build"

@@ -1,0 +1,104 @@
+# The whole stack in containers:
+#
+#   docker compose up --build        http://localhost:3000
+#
+# With no .env it runs in demo mode on SQLite: no API keys, no database to set up. Settings
+# come from .env in this directory (see .env.example and "Running in containers" in the
+# README), including COMPOSE_DATABASE_URL and the Supabase variables for local Supabase.
+
+name: gauntlet
+
+x-backend: &backend
+  image: ${GAUNTLET_API_IMAGE:-gauntlet-api:dev}
+  build:
+    context: .
+    dockerfile: deploy/docker/api.Dockerfile
+  restart: unless-stopped
+  volumes:
+    - data:/data
+  environment: &backend-env
+    DEMO_MODE: ${DEMO_MODE:-true}
+    # Empty: SQLite on the shared data volume. For local Supabase:
+    # postgresql+asyncpg://postgres:postgres@host.docker.internal:54322/postgres
+    DATABASE_URL: ${COMPOSE_DATABASE_URL:-}
+    AUTO_MIGRATE: "false" # the migrate service runs them once, first
+    API_BASE_URL: http://api:8000
+    MCP_ALLOWED_HOSTS: '["api:*", "127.0.0.1:*", "localhost:*"]'
+    GAUNTLET_SECRET_KEY: ${GAUNTLET_SECRET_KEY:-}
+    RUN_EVERY_N_MINUTES: ${RUN_EVERY_N_MINUTES:-}
+    RUN_EVEN_WHEN_MARKET_IS_CLOSED: ${RUN_EVEN_WHEN_MARKET_IS_CLOSED:-false}
+    USE_MANY_MODELS: ${USE_MANY_MODELS:-false}
+    TRADER_MODELS: ${TRADER_MODELS:-}
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    GROK_API_KEY: ${GROK_API_KEY:-}
+    OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+    MASSIVE_API_KEY: ${MASSIVE_API_KEY:-}
+    NOTIFY_CHANNEL: ${NOTIFY_CHANNEL:-auto}
+    PUSHOVER_USER: ${PUSHOVER_USER:-}
+    PUSHOVER_TOKEN: ${PUSHOVER_TOKEN:-}
+    NTFY_URL: ${NTFY_URL:-}
+    SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+  extra_hosts:
+    - host.docker.internal:host-gateway # reach local Supabase on the host, on Linux too
+
+services:
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["gauntlet", "migrate"]
+
+  api:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-[]}
+      # The API checks sign-in tokens against Supabase from inside its container.
+      SUPABASE_URL: ${SUPABASE_INTERNAL_URL:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      CORS_ORIGINS: '["http://localhost:3000", "http://127.0.0.1:3000"]'
+      FORWARDED_ALLOW_IPS: "*" # only the dashboard reaches it, and passes on the client address
+    ports:
+      - 127.0.0.1:8000:8000 # for the CLI and /docs; the dashboard goes through the web service
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *backend
+    command: ["python", "-m", "gauntlet.trading_floor"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "gauntlet.health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+    stop_grace_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+
+  web:
+    image: ${GAUNTLET_WEB_IMAGE:-gauntlet-web:dev}
+    build:
+      context: .
+      dockerfile: deploy/docker/web.Dockerfile
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8000
+      # As the browser sees them (e.g. http://127.0.0.1:54321 for local Supabase).
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+    ports:
+      - 127.0.0.1:3000:3000 # this machine only; drop 127.0.0.1: to share on your network
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  data:

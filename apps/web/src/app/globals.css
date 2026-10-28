@@ -1,0 +1,185 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* The theme toggle sets data-theme on <html>; dark: utilities follow it. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* "Ledger": cool sage paper and navy ink by day, deep slate by night. Colour is reserved
+   for data; chrome stays in ink. Series slots are the validated categorical palette, one
+   per trader in creation order. */
+:root {
+  color-scheme: light;
+  --paper: #f2f4f1;
+  --surface: #fbfcfa;
+  --surface-2: #eaeee9;
+  --ink: #12202f;
+  --ink-2: #44525f;
+  --muted: #66727d;
+  --rule: #d6ddd7;
+  --rule-strong: #b6c0b8;
+  --gain: #006300;
+  --loss: #b42f2f;
+  --warn: #8a5a00;
+  --grid: #e3e8e3;
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
+  --series-other: #8b959d;
+  --benchmark: #8b959d;
+
+  /* Diverging (blue gains, red losses) around a neutral midpoint, for holdings tiles. */
+  --div-neg-3: #c43d3d;
+  --div-neg-2: #e88583;
+  --div-neg-1: #f4c9c7;
+  --div-mid: #d3dad4;
+  --div-pos-1: #c5dcf6;
+  --div-pos-2: #6da7ec;
+  --div-pos-3: #256abf;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --paper: #0f1720;
+    --surface: #16212c;
+    --surface-2: #1d2a37;
+    --ink: #e8edf1;
+    --ink-2: #b2bec9;
+    --muted: #8794a0;
+    --rule: #263442;
+    --rule-strong: #364757;
+    --gain: #2fbf4f;
+    --loss: #f07a78;
+    --warn: #e0a640;
+    --grid: #1f2c39;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+    --series-other: #6d7a86;
+    --benchmark: #7d8a96;
+
+    --div-neg-3: #e88583;
+    --div-neg-2: #b04444;
+    --div-neg-1: #5a2a30;
+    --div-mid: #33424f;
+    --div-pos-1: #1e3f66;
+    --div-pos-2: #2f6fc2;
+    --div-pos-3: #6da7ec;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0f1720;
+  --surface: #16212c;
+  --surface-2: #1d2a37;
+  --ink: #e8edf1;
+  --ink-2: #b2bec9;
+  --muted: #8794a0;
+  --rule: #263442;
+  --rule-strong: #364757;
+  --gain: #2fbf4f;
+  --loss: #f07a78;
+  --warn: #e0a640;
+  --grid: #1f2c39;
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --series-other: #6d7a86;
+  --benchmark: #7d8a96;
+
+  --div-neg-3: #e88583;
+  --div-neg-2: #b04444;
+  --div-neg-1: #5a2a30;
+  --div-mid: #33424f;
+  --div-pos-1: #1e3f66;
+  --div-pos-2: #2f6fc2;
+  --div-pos-3: #6da7ec;
+}
+
+@theme inline {
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-gain: var(--gain);
+  --color-loss: var(--loss);
+  --color-warn: var(--warn);
+  --radius-panel: 6px;
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  body {
+    background: var(--paper);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--series-1) 30%, transparent);
+  }
+}
+
+@layer utilities {
+  /* Archivo's width axis carries the display voice: names and headings run wide. */
+  .font-wide {
+    font-stretch: 122%;
+  }
+  .font-narrow {
+    font-stretch: 88%;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* The one live-update cue: a number that just changed glows briefly. */
+  .flash {
+    animation: flash 1.2s ease-out;
+  }
+}
+
+@keyframes flash {
+  from {
+    background-color: color-mix(in oklab, var(--ink) 14%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+  }
+}

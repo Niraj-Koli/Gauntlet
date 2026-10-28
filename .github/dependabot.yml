@@ -1,0 +1,24 @@
+# Weekly update PRs. Each new version waits two weeks first, so a bad or compromised release
+# has time to be noticed and pulled before it reaches this project.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }
+    groups:
+      python: { patterns: ["*"] }
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }
+    groups:
+      web: { patterns: ["*"] }
+  - package-ecosystem: docker
+    directory: /deploy/docker
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 14 }

@@ -1,0 +1,81 @@
+{{- $component := "worker" }}
+{{- $volume := printf "%s-worker-data" (include "gauntlet.fullname" .) }}
+{{- if .Values.worker.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $volume }}
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+  annotations:
+    # Keep the researchers' memories if the app is deleted.
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  accessModes: [{{ .Values.worker.persistence.accessMode }}]
+  {{- with .Values.worker.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.worker.persistence.size }}
+---
+{{- end }}
+# The trading floor: the scheduler and the agents. One replica, replaced rather than rolled,
+# so two never run against the same memory volume.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gauntlet.fullname" . }}-worker
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "gauntlet.selectorLabels" (list . $component) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gauntlet.selectorLabels" (list . $component) | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- include "gauntlet.podDefaults" . | nindent 6 }}
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      containers:
+        - name: worker
+          image: {{ include "gauntlet.image" (list . "api") }}
+          imagePullPolicy: {{ .Values.image.api.pullPolicy }}
+          command: ["python", "-m", "gauntlet.trading_floor"]
+          {{- include "gauntlet.backendEnv" . | nindent 10 }}
+          # The scheduler touches a heartbeat file every few seconds; a stuck loop restarts.
+          startupProbe:
+            exec: { command: ["python", "-m", "gauntlet.health"] }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            exec: { command: ["python", "-m", "gauntlet.health"] }
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: data, mountPath: /data }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+        {{- if .Values.worker.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $volume }}
+        {{- else }}
+        - { name: data, emptyDir: {} }
+        {{- end }}

@@ -1,0 +1,44 @@
+# A local k3d cluster (deploy/scripts/cluster-up.sh): demo mode, images imported into the
+# cluster rather than pulled, and the database in local Supabase on the host machine.
+# The secret (DATABASE_URL, GAUNTLET_SECRET_KEY, ADMIN_API_TOKEN) is created by the script.
+
+image:
+  api:
+    repository: gauntlet-api
+    tag: local
+    pullPolicy: Never
+  web:
+    repository: gauntlet-web
+    tag: local
+    pullPolicy: Never
+
+config:
+  DEMO_MODE: "true"
+  RUN_EVEN_WHEN_MARKET_IS_CLOSED: "true"
+
+supabase:
+  url: http://127.0.0.1:54321
+  internalUrl: http://host.k3d.internal:54321
+  # The Supabase CLI's local demo key, the same on every machine (not a real secret).
+  anonKey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0  # gitleaks:allow
+
+admin:
+  emails: [admin@gauntlet.local]
+
+api:
+  autoscaling:
+    minReplicas: 1
+    maxReplicas: 2
+  podDisruptionBudget: null
+
+web:
+  replicas: 1
+  podDisruptionBudget: null
+
+worker:
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+
+ingress:
+  className: traefik
+  host: gauntlet.localhost

@@ -1,0 +1,58 @@
+{{- if .Values.networkPolicy.enabled }}
+# The dashboard accepts traffic from anywhere (the ingress controller).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "gauntlet.fullname" . }}-web
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "gauntlet.selectorLabels" (list . "web") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - ports:
+        - port: 3000
+---
+# The API: only the dashboard (which forwards /api/v1) and the trading floor (its MCP servers).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "gauntlet.fullname" . }}-api
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "gauntlet.selectorLabels" (list . "api") | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "gauntlet.selectorLabels" (list . "web") | nindent 14 }}
+        - podSelector:
+            matchLabels:
+              {{- include "gauntlet.selectorLabels" (list . "worker") | nindent 14 }}
+      ports:
+        - port: 8000
+---
+# Nothing connects to the trading floor or the migration job.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "gauntlet.fullname" . }}-no-ingress
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/instance
+        operator: In
+        values: [{{ .Release.Name | quote }}]
+      - key: app.kubernetes.io/component
+        operator: In
+        values: [worker, migrate]
+  policyTypes: [Ingress]
+{{- end }}

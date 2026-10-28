@@ -1,0 +1,42 @@
+# The application itself, from the chart in this repository. A push that changes the chart or
+# values-<env>.yaml (CI bumps the image tags there) is synced automatically.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gauntlet
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: gauntlet
+  source:
+    repoURL: {{ .Values.repoURL | quote }}
+    targetRevision: {{ .Values.targetRevision | quote }}
+    path: deploy/helm/gauntlet
+    helm:
+      valueFiles:
+        - values-{{ .Values.env }}.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.namespace }}
+  # The HPA owns the API's replica count.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: gauntlet-api
+      jsonPointers: [/spec/replicas]
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      # The SealedSecret's CRD may still be arriving from the sealed-secrets app.
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m

@@ -1,0 +1,50 @@
+{{- if .Values.migrations.enabled }}
+# Applies database migrations before the new pods start. Under Argo CD it's a Sync hook
+# ordered after the ConfigMap and secret (wave -2) and before the workloads (wave 0); under
+# plain Helm, a pre-install/pre-upgrade hook. Either way it's recreated on every rollout.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "gauntlet.fullname" . }}-migrate
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-1"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "gauntlet.selectorLabels" (list . "migrate") | nindent 8 }}
+    spec:
+      {{- include "gauntlet.podDefaults" . | nindent 6 }}
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: {{ include "gauntlet.image" (list . "api") }}
+          imagePullPolicy: {{ .Values.image.api.pullPolicy }}
+          command: ["gauntlet", "migrate"]
+          # Only the secret: under plain Helm this runs before the ConfigMap exists.
+          envFrom:
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+          env:
+            - { name: HOME, value: /tmp }
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+{{- end }}

@@ -1,0 +1,10 @@
+# Set by the root Application (deploy/argocd/root.yaml), so nothing here names a repository.
+repoURL: ""
+targetRevision: main
+# local or prod: picks deploy/helm/gauntlet/values-<env>.yaml
+env: local
+namespace: gauntlet
+
+sealedSecrets:
+  enabled: true
+  chartVersion: 2.20.0

@@ -1,0 +1,31 @@
+# Production: images from GHCR at the commit CI built, a Supabase project, and secrets
+# committed only in sealed (encrypted) form. Replace the YOUR_* placeholders.
+
+image:
+  api:
+    repository: ghcr.io/YOUR_GITHUB_USER/gauntlet-api
+    tag: "" # set by CI on every push to main
+  web:
+    repository: ghcr.io/YOUR_GITHUB_USER/gauntlet-web
+    tag: "" # set by CI on every push to main
+
+supabase:
+  url: https://YOUR_PROJECT_REF.supabase.co
+  anonKey: "" # Project settings > API keys: the anon (public) key
+
+admin:
+  emails: []
+
+ingress:
+  className: "" # the cluster's default ingress class
+  host: gauntlet.example.com
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+    enabled: true
+    secretName: gauntlet-tls
+
+# deploy/scripts/seal-secrets.sh .env.prod prints this block from your production .env,
+# encrypted for this cluster's Sealed Secrets controller.
+sealedSecret:
+  encryptedData: {}

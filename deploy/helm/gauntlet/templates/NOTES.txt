@@ -1,0 +1,11 @@
+Gauntlet is deploying to {{ .Release.Namespace }}.
+{{- if .Values.ingress.enabled }}
+
+Dashboard: {{ ternary "https" "http" .Values.ingress.tls.enabled }}://{{ .Values.ingress.host }}
+{{- else }}
+
+Dashboard: kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "gauntlet.fullname" . }}-web 3000:80
+{{- end }}
+
+The trading floor's log: kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "gauntlet.fullname" . }}-worker -f
+The floor's state:       kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "gauntlet.fullname" . }}-api -- gauntlet status

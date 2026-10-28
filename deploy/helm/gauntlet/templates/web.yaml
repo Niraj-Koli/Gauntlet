@@ -1,0 +1,79 @@
+{{- $component := "web" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gauntlet.fullname" . }}-web
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      {{- include "gauntlet.selectorLabels" (list . $component) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gauntlet.selectorLabels" (list . $component) | nindent 8 }}
+    spec:
+      {{- include "gauntlet.podDefaults" . | nindent 6 }}
+      containers:
+        - name: web
+          image: {{ include "gauntlet.image" (list . "web") }}
+          imagePullPolicy: {{ .Values.image.web.pullPolicy }}
+          env:
+            - name: API_URL
+              value: {{ printf "http://%s:8000" (include "gauntlet.apiHost" .) | quote }}
+            - name: SUPABASE_URL
+              value: {{ .Values.supabase.url | quote }}
+            - name: SUPABASE_ANON_KEY
+              value: {{ .Values.supabase.anonKey | quote }}
+          ports:
+            - name: http
+              containerPort: 3000
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: cache, mountPath: /app/.next/cache }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+        - { name: cache, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gauntlet.fullname" . }}-web
+  labels:
+    {{- include "gauntlet.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    {{- include "gauntlet.selectorLabels" (list . $component) | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+{{- with .Values.web.podDisruptionBudget }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "gauntlet.fullname" $ }}-web
+  labels:
+    {{- include "gauntlet.labels" $ | nindent 4 }}
+spec:
+  minAvailable: {{ .minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "gauntlet.selectorLabels" (list $ $component) | nindent 6 }}
+{{- end }}

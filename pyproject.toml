@@ -1,0 +1,66 @@
+[project]
+name = "gauntlet-workspace"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["gauntlet"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["apps/api"]
+
+[tool.uv.sources]
+gauntlet = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.7.0",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7",
+    "ruff>=0.17.1",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Prompt and persona text: re-wrapping it would change what the models see.
+"apps/api/src/gauntlet/templates.py" = ["E501"]
+"apps/api/src/gauntlet/personas.py" = ["E501"]
+"apps/api/src/gauntlet/db/migrations/**" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gauntlet"]
+
+[tool.pyright]
+include = ["apps/api/src", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+
+[tool.coverage.run]
+source = ["gauntlet"]
+
+[tool.coverage.report]
+# CI fails below this. AccountService (domain/accounts.py), where the money moves, is held higher
+# by its own tests.
+fail_under = 90
+show_missing = true
+skip_covered = true
+exclude_also = ['if __name__ == "__main__":']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    # Raised inside openai-agents' MCP client (an mcp deprecation it hasn't caught up with yet).
+    "ignore:Use `streamable_http_client` instead:DeprecationWarning",
+]

@@ -1,0 +1,29 @@
+# What the Gauntlet applications may deploy, and where.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: gauntlet
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  description: Gauntlet and the platform pieces it needs
+  sourceRepos:
+    - {{ required "repoURL is required" .Values.repoURL | quote }}
+    - https://bitnami.github.io/sealed-secrets
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: {{ .Values.namespace }}
+    - server: https://kubernetes.default.svc
+      namespace: kube-system # the Sealed Secrets controller
+  clusterResourceWhitelist:
+    # Sealed Secrets installs its CRD and cluster-wide RBAC; the app's own namespace too.
+    - { group: apiextensions.k8s.io, kind: CustomResourceDefinition }
+    - { group: rbac.authorization.k8s.io, kind: ClusterRole }
+    - { group: rbac.authorization.k8s.io, kind: ClusterRoleBinding }
+    - { group: "", kind: Namespace }
+  orphanedResources:
+    warn: true
+    ignore:
+      # Locally, cluster-up.sh creates the app's secret outside git.
+      - { kind: Secret, name: gauntlet }

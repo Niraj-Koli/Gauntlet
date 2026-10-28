@@ -1,0 +1,9 @@
+apiVersion: v2
+name: gauntlet
+description: Autonomous AI traders on a simulated trading floor, with the API, the trading floor worker and the dashboard.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.29.0-0"
+home: https://github.com/YOUR_GITHUB_USER/gauntlet
+keywords: [ai-agents, trading, mcp, fastapi, nextjs]

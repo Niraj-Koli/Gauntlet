@@ -1,0 +1,45 @@
+# Findings reviewed and accepted, each with the reason. See SECURITY.md. Every entry expires, so
+# the scan fails again and the decision gets another look.
+
+vulnerabilities:
+  # litellm 1.83.0. Every advisory below is in LiteLLM's proxy server (its HTTP endpoints,
+  # key management and MCP gateway). Gauntlet only imports litellm as a client library for
+  # the agents and never starts the proxy. Patched releases (1.84+) require openai<3, which
+  # the OpenAI Agents SDK can't use; upgrade once a stable litellm supports openai 3.
+  - id: CVE-2026-37004
+    statement: Proxy only (/prompts/test SSTI). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-42208
+    statement: Proxy only (SQL injection in proxy API key checks). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-49468
+    statement: Proxy only (Host header auth bypass). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-40217
+    statement: Proxy only (/guardrails/test_custom_code). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-42203
+    statement: Proxy only (/prompts/test templates). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-42271
+    statement: Proxy only (/mcp-rest test endpoints). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-47101
+    statement: Proxy only (API key generation permissions). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-47102
+    statement: Proxy only (/user/update role change). The proxy is not run.
+    expired_at: 2027-01-31
+  - id: CVE-2026-59822
+    statement: Proxy only (MCP streamable HTTP endpoint auth). The proxy is not run.
+    expired_at: 2027-01-31
+
+misconfigurations:
+  - id: KSV-0125
+    statement: >-
+      "Restrict images to trusted registries" needs a cluster-specific allowlist; images come
+      from GHCR at a commit SHA set by CI, or are imported locally.
+  - id: KSV-01010
+    statement: >-
+      Flags ADMIN_EMAILS in the ConfigMap. It's an allowlist of addresses, not a credential;
+      secrets live in the Secret (sealed in git).
