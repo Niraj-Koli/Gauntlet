@@ -1,7 +1,6 @@
 # Configuration and running locally
 
-Everything here is about running Gauntlet on your machine without containers. For Docker,
-Kubernetes and production, see [deployment.md](deployment.md).
+Everything here is about running Gauntlet on your machine without containers. For Docker, Kubernetes and production, see [deployment.md](deployment.md).
 
 ## Setup
 

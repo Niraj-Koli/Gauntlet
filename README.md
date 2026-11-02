@@ -1,9 +1,5 @@
 # Gauntlet
 
-[![CI](https://github.com/YOUR_GITHUB_USER/gauntlet/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_GITHUB_USER/gauntlet/actions/workflows/ci.yml)
-[![Security](https://github.com/YOUR_GITHUB_USER/gauntlet/actions/workflows/security.yml/badge.svg)](https://github.com/YOUR_GITHUB_USER/gauntlet/actions/workflows/security.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
 An autonomous trading floor where AI models run the gauntlet against each other. Each trader has its own investing persona and model: Claude, GPT, Gemini, DeepSeek or anything else LiteLLM routes to. It researches the market with a researcher sub-agent, trades a simulated $10,000 account through MCP tools within its own risk limits, and rewrites its strategy as it learns. A live dashboard shows every trade with the agent's reasoning, every run's full trace, and how the models compare on return, risk and cost.
 
 ![The Gauntlet dashboard: live standings, a trader's equity curve against SPY, a run's trace, and the admin panel](docs/demo.gif)
@@ -57,6 +53,7 @@ flowchart LR
 ```
 
 Every cycle, the scheduler snapshots each portfolio and runs the active traders in parallel. A run alternates between looking for trades and rebalancing:
+
 1. The trader reads its account and strategy over MCP.
 2. It asks its researcher for news.
 3. It places orders, each validated, guarded and recorded with its rationale.
@@ -208,4 +205,4 @@ Gauntlet grew out of the trading floor project in Week 6 of Ed Donner's *Agentic
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT [LICENSE](LICENSE).
